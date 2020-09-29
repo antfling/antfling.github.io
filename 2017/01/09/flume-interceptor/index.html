@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 3.9.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"antfling.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Flume配置与自定义过滤器1.安装Flume12# yum -y install flume# 或者从apache flume官网上下载响应的压缩包解压即可  2.配置 Flume只需要配置一下JDK路径就可以运行了 1234567# echo $JAVE_HOME/usr/java/latest(这是TDH自带的JDK路径)# cd /usr/lib/flume/conf# cp flume-">
+<meta name="keywords" content="Flume">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flume配置与自定义过滤器">
+<meta property="og:url" content="https://antfling.github.io/2017/01/09/flume-interceptor/index.html">
+<meta property="og:site_name" content="Antfling">
+<meta property="og:description" content="Flume配置与自定义过滤器1.安装Flume12# yum -y install flume# 或者从apache flume官网上下载响应的压缩包解压即可  2.配置 Flume只需要配置一下JDK路径就可以运行了 1234567# echo $JAVE_HOME/usr/java/latest(这是TDH自带的JDK路径)# cd /usr/lib/flume/conf# cp flume-">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://i.imgur.com/oFu9606.png">
+<meta property="og:updated_time" content="2020-09-29T06:52:07.630Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Flume配置与自定义过滤器">
+<meta name="twitter:description" content="Flume配置与自定义过滤器1.安装Flume12# yum -y install flume# 或者从apache flume官网上下载响应的压缩包解压即可  2.配置 Flume只需要配置一下JDK路径就可以运行了 1234567# echo $JAVE_HOME/usr/java/latest(这是TDH自带的JDK路径)# cd /usr/lib/flume/conf# cp flume-">
+<meta name="twitter:image" content="http://i.imgur.com/oFu9606.png">
+
+<link rel="canonical" href="https://antfling.github.io/2017/01/09/flume-interceptor/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Flume配置与自定义过滤器 | Antfling</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Antfling</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">雄关漫道真如铁</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://antfling.github.io/2017/01/09/flume-interceptor/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Ant">
+      <meta itemprop="description" content="Es Ist Vorbei">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Antfling">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Flume配置与自定义过滤器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2017-01-09 17:25:00" itemprop="dateCreated datePublished" datetime="2017-01-09T17:25:00+08:00">2017-01-09</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-09-29 14:52:07" itemprop="dateModified" datetime="2020-09-29T14:52:07+08:00">2020-09-29</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/BigData/" itemprop="url" rel="index"><span itemprop="name">BigData</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="Flume配置与自定义过滤器"><a href="#Flume配置与自定义过滤器" class="headerlink" title="Flume配置与自定义过滤器"></a>Flume配置与自定义过滤器</h2><h3 id="1-安装Flume"><a href="#1-安装Flume" class="headerlink" title="1.安装Flume"></a>1.安装Flume</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># yum -y install flume</span><br><span class="line"># 或者从apache flume官网上下载响应的压缩包解压即可</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-配置"><a href="#2-配置" class="headerlink" title="2.配置"></a>2.配置</h3><ul>
+<li><p>Flume只需要配置一下JDK路径就可以运行了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># echo $JAVE_HOME</span><br><span class="line">/usr/java/latest(这是TDH自带的JDK路径)</span><br><span class="line"># cd /usr/lib/flume/conf</span><br><span class="line"># cp flume-env.sh.template flume-env.sh</span><br><span class="line"># vim flume-env.sh</span><br><span class="line"># 找到 # export JAVA_HOME=/usr/lib/jvm/java-6-sun 这一行，修改为系统的JDK路径</span><br><span class="line"># export JAVA_HOME=/usr/java/latest</span><br></pre></td></tr></table></figure>
+
+</li>
+</ul>
+<h3 id="3-使用"><a href="#3-使用" class="headerlink" title="3.使用"></a>3.使用</h3><ul>
+<li><p>使用之前了解下Flume架构</p>
+<p>  <img src="http://i.imgur.com/oFu9606.png" alt="Flume-ng框架图"></p>
+<ul>
+<li>说明：source接收不仅是web server,sink的对象不仅是HDFS;主要是看矩形内的图形</li>
+<li>Source:收集各种方式传递来的数据，如：<ul>
+<li>Avro Source（这个重点掌握，监控架构用的是这种方式）</li>
+<li>Exec Source</li>
+<li>Spooling Directory Source</li>
+<li>NetCat Source</li>
+<li>Syslog Sources等等</li>
+</ul>
+</li>
+<li>Sink：将收集数据发送到指定的组件中，如：<ul>
+<li>Kafka sink（这个重点掌握，监控架构用的是这种方式）</li>
+<li>HDFS Sink</li>
+<li>Logger Sink</li>
+<li>Avro Sink</li>
+<li>File RollSink等等</li>
+</ul>
+</li>
+<li>Channel：连接 sources 和 sinks ，数据会从sources进入到channel中去，然后再给到sinks中，这个有点像一个队列。Channel类型如下：<ul>
+<li>Memory Channel(内存队列)</li>
+<li>JDBC Channel(把事件存储在数据库)</li>
+<li>File Channel</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="4-这里首先配置一个简单的模式（查看flume是否配置成功）："><a href="#4-这里首先配置一个简单的模式（查看flume是否配置成功）：" class="headerlink" title="4.这里首先配置一个简单的模式（查看flume是否配置成功）："></a>4.这里首先配置一个简单的模式（查看flume是否配置成功）：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">- 使用NetCat Source传递数据，使用memory channel缓存，显示到Logger Sink（控制台上）</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"># cd /usr/lib/flume/conf</span><br><span class="line"> 		# vim netcat-logger.conf  </span><br><span class="line"></span><br><span class="line">#定义主机(a1),以及各组件名称 </span><br><span class="line">a1.sources= r1  </span><br><span class="line">a1.sinks= k1  </span><br><span class="line">a1.channels= c1  </span><br><span class="line">   </span><br><span class="line">#定义source  </span><br><span class="line">a1.sources.r1.type= netcat  </span><br><span class="line">a1.sources.r1.bind= localhost  </span><br><span class="line">a1.sources.r1.port= 44444  </span><br><span class="line">a1.sources.r1.channels= c1</span><br><span class="line">   </span><br><span class="line">#定义Sink  </span><br><span class="line">a1.sinks.k1.type= logger </span><br><span class="line">a1.sinks.k1.channel= c1 </span><br><span class="line">   </span><br><span class="line">#定义Channel  </span><br><span class="line">a1.channels.c1.type= memory  </span><br><span class="line">a1.channels.c1.capacity= 1000  </span><br><span class="line">a1.channels.c1.transactionCapacity= 100</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>运行并测试</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># cd /usr/lib/flume/</span><br><span class="line"># flume-ng agent -n a1 -c conf -f conf/netcat-logger.conf  -Dflume.root.logger=INFO,console</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>参数命令</p>
+<ul>
+<li>-c conf 指定配置目录为conf</li>
+<li>-f conf/netcat-logger.conf指定配置文件为conf/netcat-logger.conf</li>
+<li>-n a1 指定agent名字为a1,需要与netcat-logger.conf中的一致</li>
+<li>-Dflume.root.logger=INFO,console指定DEBUF模式在console输出INFO信息</li>
+<li>具体参数命令请通过flume-nghelp查看</li>
+</ul>
+</li>
+<li><p>然后在另一个终端进行测试</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">telnet 127.0.0.1 44444</span><br></pre></td></tr></table></figure>
+
+<p>然后在之前启动的终端查看console是否有输出，有则说明Flume能正常使用</p>
+</li>
+</ul>
+<h3 id="5-自定义过滤器"><a href="#5-自定义过滤器" class="headerlink" title="5.自定义过滤器"></a>5.自定义过滤器</h3><p>过滤器需要实现Interceptor接口,并在此类中再写一个类中类实现Interceptor.Builder接口,切记这个类中类必须用static修饰，不然会报InstantiationException(无法初始化的异常),相关代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line">package com.demo.flume.interceptor;</span><br><span class="line"></span><br><span class="line">import com.google.common.collect.Lists;</span><br><span class="line">import org.apache.commons.logging.Log;</span><br><span class="line">import org.apache.commons.logging.LogFactory;</span><br><span class="line">import org.apache.flume.Context;</span><br><span class="line">import org.apache.flume.Event;</span><br><span class="line">import org.apache.flume.interceptor.Interceptor;</span><br><span class="line">import org.joda.time.LocalDateTime;</span><br><span class="line"></span><br><span class="line">import java.util.List;</span><br><span class="line"></span><br><span class="line">public class TimestampInterceptor implements Interceptor &#123;</span><br><span class="line"></span><br><span class="line">    Log log = LogFactory.getLog(TimestampInterceptor.class);</span><br><span class="line"></span><br><span class="line">    public TimestampInterceptor() &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void initialize() &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public Event intercept(Event event) &#123;</span><br><span class="line">        String body = new String(event.getBody());</span><br><span class="line">        log.info(&quot;start:&quot;+body);</span><br><span class="line">        LocalDateTime now = LocalDateTime.now();</span><br><span class="line">        body = body.replaceFirst(&quot;[0-9]&#123;2&#125;:[0-9]&#123;2&#125;:[0-9]&#123;2&#125;\\.[0-9]&#123;3&#125;&quot;, now.toString(&quot;HH:mm:ss.SSS&quot;));</span><br><span class="line">        event.setBody(body.getBytes());</span><br><span class="line">        log.info(&quot;end:&quot;+body);</span><br><span class="line">        return event;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public List&lt;Event&gt; intercept(List&lt;Event&gt; events) &#123;</span><br><span class="line">        List&lt;Event&gt; out = Lists.newArrayList();</span><br><span class="line">        for (Event event : events) &#123;</span><br><span class="line">            Event outEvent = intercept(event);</span><br><span class="line">            if (outEvent != null) &#123;</span><br><span class="line">                out.add(outEvent);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return out;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void close() &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">//切记这里需要加上static进行修饰</span><br><span class="line">    public static class Builder implements Interceptor.Builder &#123;</span><br><span class="line">        public Builder() &#123;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public Interceptor build() &#123;</span><br><span class="line">            return new TimestampInterceptor();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        @Override</span><br><span class="line">        public void configure(Context context) &#123;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-自定义过滤器的使用"><a href="#6-自定义过滤器的使用" class="headerlink" title="6.自定义过滤器的使用"></a>6.自定义过滤器的使用</h3><p>在第四步中的配置添加如下配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">a1.sources.r1.interceptors = i1</span><br><span class="line">a1.sources.r1.interceptors.i1.type = com.antfling.flume.interceptor.TimestampInterceptor$Builder</span><br></pre></td></tr></table></figure>
+
+<p>在flume的home目录下建立 一个plugins.d目录(这个目录是flume使用的第三方插件的支持目录，会自动加载进来)，在plugins.d目录下建立一个目录timestamp-interceptor(名字随意，但是要唯一）,在timestamp-interceptor目录下建立如下目录</p>
+<ul>
+<li>建立lib目录，这个目录放入刚刚写好的过滤器打包的jar包.</li>
+<li>建立libext目录,这个里面放过滤器需要的依赖包(没有可不创建这个目录)</li>
+<li>建立native目录，这个里面放过滤器需要的底层依赖(例如source.so,没有可不创建这个目录)</li>
+</ul>
+<p>之后重启flume即可</p>
+<h3 id="7-注意事项"><a href="#7-注意事项" class="headerlink" title="7.注意事项"></a>7.注意事项</h3><ul>
+<li>注意过滤器的类中类要用static修饰,过滤器和类中类都要有无参构造方法</li>
+<li>打包注意尽量使用gradle或者maven自带的打包插件，我这原先是spring boot项目打出的包是可运行的包，不是依赖包，所以会有问题</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Flume/" rel="tag"># Flume</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2017/01/04/spring-boot-war-package/" rel="prev" title="Spring Boot Web项目的war打包相关配置">
+      <i class="fa fa-chevron-left"></i> Spring Boot Web项目的war打包相关配置
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2017/01/10/seyren-source-diy/" rel="next" title="seyren插件源码解读">
+      seyren插件源码解读 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Flume配置与自定义过滤器"><span class="nav-number">1.</span> <span class="nav-text">Flume配置与自定义过滤器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-安装Flume"><span class="nav-number">1.1.</span> <span class="nav-text">1.安装Flume</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-配置"><span class="nav-number">1.2.</span> <span class="nav-text">2.配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-使用"><span class="nav-number">1.3.</span> <span class="nav-text">3.使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-这里首先配置一个简单的模式（查看flume是否配置成功）："><span class="nav-number">1.4.</span> <span class="nav-text">4.这里首先配置一个简单的模式（查看flume是否配置成功）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-自定义过滤器"><span class="nav-number">1.5.</span> <span class="nav-text">5.自定义过滤器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-自定义过滤器的使用"><span class="nav-number">1.6.</span> <span class="nav-text">6.自定义过滤器的使用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-注意事项"><span class="nav-number">1.7.</span> <span class="nav-text">7.注意事项</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Ant</p>
+  <div class="site-description" itemprop="description">Es Ist Vorbei</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">14</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Ant</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script>
+<script src="/js/schemes/muse.js"></script>
+<script src="/js/next-boot.js"></script>
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.5.1.min.js" ></script> 
+<script type="text/javascript"> 
+/* 鼠标特效 */
+var a_idx = 0; 
+jQuery(document).ready(function($) { 
+    $("body").click(function(e) { 
+        var a = new Array("富强", "民主", "文明", "和谐", "自由", "平等", "公正" ,"法治", "爱国", "敬业", "诚信", "友善"); 
+        var $i = $("<span/>").text(a[a_idx]); 
+        a_idx = (a_idx + 1) % a.length; 
+        var x = e.pageX, 
+        y = e.pageY; 
+        $i.css({ 
+            "z-index": 999999999999999999999999999999999999999999999999999999999999999999999, 
+            "top": y - 20, 
+            "left": x, 
+            "position": "absolute", 
+            "font-weight": "bold", 
+            "color": "#ff6651" 
+        }); 
+        $("body").append($i); 
+        $i.animate({ 
+            "top": y - 180, 
+            "opacity": 0 
+        }, 
+        1500, 
+        function() { 
+            $i.remove(); 
+        }); 
+    }); 
+}); 
+</script>
+</html>
